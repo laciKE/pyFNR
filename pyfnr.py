@@ -4,12 +4,13 @@ import math
 libfnr = ctypes.cdll.LoadLibrary('libfnr.so')
 libssl = ctypes.cdll.LoadLibrary('libssl.so')
 
+KEY_SIZE = 32 #bytes
+SALT_SIZE = 32 #bytes
+
 class FNR_expanded_tweak(ctypes.Structure):
 	_fields_ = [("tweak", ctypes.c_ubyte * 15)] 
 
 class FNR(object):
-	KEY_SIZE = 32 #bytes
-	SALT_SIZE = 32 #bytes
 	block_size = 32 # bits
 	block_size_bytes = 4
 	fnr_expanded_key = None
@@ -20,12 +21,12 @@ class FNR(object):
 		self.block_size = block_size
 		self.block_size_bytes = int(math.ceil(1.0 * self.block_size / 8))
 
-		master_key = "\0" * self.KEY_SIZE
-		if (libssl.PKCS5_PBKDF2_HMAC_SHA1(password, len(password), salt, self.SALT_SIZE, 1000, self.KEY_SIZE, master_key) != 1):
+		master_key = "\0" * KEY_SIZE
+		if (libssl.PKCS5_PBKDF2_HMAC_SHA1(password, len(password), salt, SALT_SIZE, 1000, KEY_SIZE, master_key) != 1):
 			raise EnvironmentError("call to OpenSSL's PKCS5_PBKDF2_HMAC_SHA1 failed")
 
 		libfnr.FNR_init()
-		self.fnr_expanded_key = libfnr.FNR_expand_key(master_key, self.KEY_SIZE*8, block_size)
+		self.fnr_expanded_key = libfnr.FNR_expand_key(master_key, KEY_SIZE*8, block_size)
 		if (not self.fnr_expanded_key):
 			raise EnvironmentError("call to fnr_expanded_key failed")
 
@@ -62,12 +63,6 @@ class FNR(object):
 
 		return self._str_to_int(plaintext)
 
-	def generate_salt(self):
-		salt = "\0" * self.SALT_SIZE
-		if (libssl.RAND_bytes(salt, 32) != 1 ):
-			raise EnvironmentError("call to OpenSSL's RAND_bytes failed")
-		return salt
-
 	def _int_to_str(self, intval):
 		hexval = "{0:x}".format(intval)
 		# even number of chars, each byte should be two chars
@@ -78,8 +73,15 @@ class FNR(object):
 		except TypeError:
 			# workaround for Python 2.6 unicode requirement
 			strval = str(bytearray.fromhex(unicode(hexval)))
+		#strval = "".join(map(chr, byteval))
 
 		return strval
 
 	def _str_to_int(self, strval):
 		return int(strval.encode("hex"), 16)
+
+def generate_salt():
+	salt = "\0" * SALT_SIZE
+	if (libssl.RAND_bytes(salt, 32) != 1 ):
+		raise EnvironmentError("call to OpenSSL's RAND_bytes failed")
+	return salt
