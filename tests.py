@@ -147,6 +147,20 @@ class TestCrypt(unittest.TestCase):
 				self.assertEqual(p, p2)
 
 
+class TestSalt(unittest.TestCase):
+
+	def test_salt_length(self):
+		for i in range(100):
+			salt = pyFNR.generate_salt()
+			self.assertEqual(len(salt), pyFNR.SALT_SIZE)
+
+	def test_salt_diversity(self):
+		salts = [pyFNR.generate_salt() for i in range(1000)]
+		salts.sort()
+		for i in range(len(salts)-1):
+			self.assertNotEqual(salts[i], salts[i+1])
+
+
 class Helper(object):
 
 	@staticmethod
