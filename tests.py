@@ -2,6 +2,7 @@ import unittest
 import math
 import random
 import string
+import ctypes
 import pyFNR
 
 class TestConversions(unittest.TestCase):
@@ -59,6 +60,30 @@ class TestCrypt(unittest.TestCase):
 	def tearDown(self):
 		for fnr in self.fnr:
 			fnr[1].close()
+
+	def test_encryption_and_decryption_random_raw(self):
+		for item in self.fnr:
+			block_size = item[0]
+			# compute number of bytes for block_size in bits
+			block_size_bytes = int(math.ceil(block_size*1.0/8))
+			fnr = item[1]
+			# choose up to 100 random bytearrays for encryption
+			raws = Helper.generate_random_raw(block_size, min(100,2**block_size))
+			for p in raws:
+				c = ctypes.create_string_buffer(block_size_bytes)
+				fnr.encrypt_raw(p, c)
+				# check correct type
+				self.assertEqual(type(c), type(p))
+				# check correct block size
+				self.assertEqual(len(c), block_size_bytes)
+				# check correct mask of last byte
+				mask = 2**(block_size % 8) - 1 if (block_size % 8) else 0xff
+				last_byte = ord(c[-1])
+				self.assertEqual(last_byte & ~mask, 0)
+				p2 = ctypes.create_string_buffer(block_size_bytes)
+				fnr.decrypt_raw(c, p2)
+				# check correct decryption
+				self.assertEqual(p.raw, p2.raw)
 
 	def test_encryption_and_decryption_random_bytes(self):
 		for item in self.fnr:
@@ -176,6 +201,13 @@ class Helper(object):
 	def generate_random_strings(length, count):
 		return ["".join(random.choice(string.printable) for i in range(length)) for i in range(count)]
 
+	@staticmethod
+	def generate_random_raw(bits, count):
+		bytearrays = Helper.generate_random_bytearrays(bits, count)
+		bytes = int(math.ceil((bits) * 1.0 / 8)) 
+		ctype_array = ctypes.c_char * bytes
+		return [ctype_array.from_buffer(b) for b in bytearrays]
+		
 
 if __name__ == '__main__':
 	unittest.main()

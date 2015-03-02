@@ -38,7 +38,7 @@ class FNR(object):
 
 	_block_size = 32 # bits
 	_block_size_bytes = 4
-	_raw_type = ctypes.c_char*_block_size_bytes
+	_raw_type = ctypes.c_char * _block_size_bytes
 
 	_fnr_expanded_key = None
 	_fnr_tweak = _FNR_expanded_tweak()
@@ -82,6 +82,35 @@ class FNR(object):
 		_libfnr.FNR_release_key(self._fnr_expanded_key)
 		_libfnr.FNR_shut()
 
+	def encrypt_raw(self, plaintext, ciphertext):
+		"""
+		encrypt_raw(ctypes.c_char_Array_N, ctypes.c_char_Array_N)
+
+		Encrypts given plaintext using libFNR's FNR_encrypt() with key and
+		tweak determined during initialization.
+
+		plaintext -- ctypes.c_char_Array_N object to be encrypted.
+			N have to be ceil(block_size/8)
+		ciphertext -- ctypes.c_char_Array_N object to store the result.
+			N have to be ceil(block_size/8)
+		"""
+		_libfnr.FNR_encrypt(self._fnr_expanded_key, ctypes.byref(self._fnr_tweak), plaintext, ciphertext)
+
+	def decrypt_raw(self, ciphertext, plaintext):
+		"""
+		decrypt_raw(ctypes.c_char_Array_N, ctypes.c_char_Array_N)
+
+		Decrypts given ciphertext using libFNR's FNR_decrypt() with key and
+		tweak determined during initialization.
+
+		ciphertext -- ctypes.c_char_Array_N object to be decrypted.
+			N have to be ceil(block_size/8)
+		plaintext -- ctypes.c_char_Array_N object to store the result.
+			N have to be ceil(block_size/8)
+		"""
+		_libfnr.FNR_decrypt(self._fnr_expanded_key, ctypes.byref(self._fnr_tweak), ciphertext, plaintext)
+
+	
 	def encrypt_bytes(self, plaintext): # plaintext: bytearray
 		"""
 		encrypt_bytes(bytearray) -> bytearray
@@ -109,7 +138,6 @@ class FNR(object):
 		ciphertext -- bytearray to be decrypted. It should have size
 			at least ceil(block_size/8) bytes 
 		"""
-	
 		raw_plaintext = ctypes.create_string_buffer(self._block_size_bytes)
 		raw_ciphertext = self._raw_type.from_buffer(ciphertext)
 
@@ -189,6 +217,7 @@ class FNR(object):
 
 		return self._bytes_to_int(plaintext)
 
+	# conversions str <-> bytearrays, because direct conversion ctypes.c_char_Array_N -> str via .value is not sufficient (problem with leading '\x00')
 	def _str_to_bytes(self, strval):
 		return bytearray([ord(x) for x in strval])
 
