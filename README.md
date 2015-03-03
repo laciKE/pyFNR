@@ -1,4 +1,4 @@
-Python bindings to libFNR from Cisco.
+Python bindings for libFNR from Cisco: https://github.com/cisco/libfnr
 
 This module currently provides two classes:
 * FNR: libFNR wrapper with methods for enciphering/deciphering strings, integers, bytearrays and raw c_char_Arrays. 
