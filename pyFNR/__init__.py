@@ -6,6 +6,8 @@ For description of libFNR see https://github.com/cisco/libfnr
 """
 import ctypes
 import math
+import binascii
+import sys
 
 _libfnr = ctypes.cdll.LoadLibrary('libfnr.so')
 _libssl = ctypes.cdll.LoadLibrary('libssl.so')
@@ -66,6 +68,7 @@ class FNR(object):
 		self._block_size = block_size
 		self._block_size_bytes = int(math.ceil(1.0 * self._block_size / 8))
 		self._raw_type = ctypes.c_char*self._block_size_bytes
+		self._hex_format_string = "{0:0" + str(self._block_size_bytes*2) + "x}"
 
 		master_key = ctypes.create_string_buffer(KEY_SIZE)
 		raw_key = ctypes.create_string_buffer(key)
@@ -234,29 +237,38 @@ class FNR(object):
 	def _bytes_to_str(self, bytesval):
 		return "".join(map(chr, bytesval))
 
-	def _int_to_bytes2(self, intval):
-		hexval = "{0:x}".format(intval)
-		hexval = "0"*(self._block_size_bytes*2 - len(hexval)) + hexval # padding with 0s 
-		try:
+	def _int_to_bytes(self, intval):
+		hexval = self._hex_format_string.format(intval)
+		if sys.hexversion >= 0x03020000:
+			return int(intval).to_bytes(self._block_size_bytes, byteorder='little')
+		if sys.hexversion >= 0x02070000:
 			bytesval = bytearray.fromhex(hexval)
-		except TypeError:
+		else:
 			# workaround for Python 2.6 unicode requirement
-			bytesval = bytearray.fromhex(unicode(hexval))	
+			bytesval = bytearray.fromhex(unicode(hexval))
 		bytesval.reverse() # little endian
 
 		return bytesval
 
-	def _int_to_bytes(self, intval):
+	def _int_to_bytes2(self, intval):
 		bytelist = [(intval & (0xff << 8*byte)) >> 8*byte for byte in range(self._block_size_bytes)]
 		return bytearray(bytelist)
 
-	def _bytes_to_int2(self, bytesval):
+	def _bytes_to_int(self, bytesval):
+		if sys.hexversion >= 0x03020000:
+			return int.from_bytes(bytesval, byteorder='little')
 		bytesval_copy = bytearray(bytesval)
 		bytesval_copy.reverse() # little endian
-		strval = self._bytes_to_str(bytesval_copy)
-		return int(strval.encode("hex"), 16)
+		#strval = self._bytes_to_str(bytesval_copy)
+		#return int(strval.encode("hex"), 16)
+		if sys.hexversion >= 0x03000000:
+			strval = binascii.hexlify(bytesval_copy)
+		else:
+			# workaround for python 2.x string/read-only buffer argument
+			strval = binascii.hexlify(bytes(bytesval_copy))
+		return int(strval,16)
 
-	def _bytes_to_int(self, bytesval):
+	def _bytes_to_int2(self, bytesval):
 		intval = 0
 		for byte in range(self._block_size_bytes):
 			intval *= 0x100
