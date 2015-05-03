@@ -246,9 +246,9 @@ class FNR(object):
 		return "".join(map(chr, bytesval))
 
 	def _int_to_bytes(self, intval):
+		#if sys.hexversion >= 0x03020000:
+		#	return bytearray(int(intval).to_bytes(self._block_size_bytes, byteorder='little'))
 		hexval = self._hex_format_string.format(intval)
-		if sys.hexversion >= 0x03020000:
-			return bytearray(int(intval).to_bytes(self._block_size_bytes, byteorder='little'))
 		if sys.hexversion >= 0x02070000:
 			bytesval = bytearray.fromhex(hexval)
 		else:
@@ -322,6 +322,9 @@ class FNR2(object):
 		self._fnr = FNR(key, tweak, block_size, salt)
 
 	def close(self):
+		"""
+			Releases resources used by libFNR such as FNR_expanded_key.
+		"""
 		self._fnr.close()
 
 	def encrypt(self, plaintext):
