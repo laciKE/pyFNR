@@ -4,6 +4,7 @@ import random
 import string
 import ctypes
 import pyFNR
+import pyFNR.Util
 
 TEST_COUNT = 10
 
@@ -264,6 +265,98 @@ class TestFNR2Crypt(unittest.TestCase):
 				self.assertEqual(p, p2)
 		# check nonidentity transformation
 		self.assertEqual(nonidentity > 9*identity, True)
+
+class TestECV_Format(unittest.TestCase):
+
+	def setUp(self):
+		# prepare one instance for ECV format
+		self.ECV = pyFNR.Util.ECV()
+
+	def test_ranking(self):
+		# check correct ranking for some values
+		self.assertEqual(self.ECV.rank('BA000AA'), 0)
+		self.assertEqual(self.ECV.rank('BA999ZZ'), 675999)
+		self.assertEqual(self.ECV.rank('BA999ZZ') + 1, self.ECV.rank('BB000AA'))
+		self.assertEqual(self.ECV.rank('ZV999ZZ'), self.ECV.get_words_count() - 1)
+
+	def test_unranking(self):
+		# check correct unranking for some values
+		self.assertEqual(self.ECV.unrank(0), 'BA000AA')
+		self.assertEqual(self.ECV.unrank(675999), 'BA999ZZ')
+		self.assertEqual(self.ECV.unrank(676000), 'BB000AA')
+		self.assertEqual(self.ECV.unrank(self.ECV.get_words_count()-1), 'ZV999ZZ')
+
+class TestIPv4_Format(unittest.TestCase):
+
+	def setUp(self):
+		# prepare one instance for IPv4 format
+		self.IPv4 = pyFNR.Util.IPv4()
+
+	def test_ranking(self):
+		# check correct ranking for some values
+		self.assertEqual(self.IPv4.rank('0.0.0.0'), 0)
+		self.assertEqual(self.IPv4.rank('192.168.0.1'), 3232235521)
+		self.assertEqual(self.IPv4.rank('192.168.0.1') + 1, self.IPv4.rank('192.168.0.2'))
+		self.assertEqual(self.IPv4.rank('255.255.255.255'), self.IPv4.get_words_count() - 1)
+
+	def test_unranking(self):
+		# check correct unranking for some values
+		self.assertEqual(self.IPv4.unrank(0), '0.0.0.0')
+		self.assertEqual(self.IPv4.unrank(3232235521), '192.168.0.1')
+		self.assertEqual(self.IPv4.unrank(3232235522), '192.168.0.2')
+		self.assertEqual(self.IPv4.unrank(self.IPv4.get_words_count()-1), '255.255.255.255')
+
+
+class TestIPv6_Format(unittest.TestCase):
+
+	def setUp(self):
+		# prepare one instance for IPv6 format
+		self.IPv6 = pyFNR.Util.IPv6()
+
+	def test_ranking(self):
+		# check correct ranking for some values
+		self.assertEqual(self.IPv6.rank('::'), 0)
+		self.assertEqual(self.IPv6.rank('ff00::'), 338953138925153547590470800371487866880)
+		self.assertEqual(self.IPv6.rank('ff00::') + 1, self.IPv6.rank('ff00::1'))
+		self.assertEqual(self.IPv6.rank('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'), self.IPv6.get_words_count() - 1)
+
+	def test_unranking(self):
+		# check correct unranking for some values
+		self.assertEqual(self.IPv6.unrank(0), '::')
+		self.assertEqual(self.IPv6.unrank(338953138925153547590470800371487866880), 'ff00::')
+		self.assertEqual(self.IPv6.unrank(338953138925153547590470800371487866881), 'ff00::1')
+		self.assertEqual(self.IPv6.unrank(self.IPv6.get_words_count()-1), 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff')
+
+
+class TestLuhnR_Format(unittest.TestCase):
+
+	def setUp(self):
+		# prepare two instances for LuhnR format
+		self.LuhnR_0 = pyFNR.Util.LuhnR(0, 16)
+		self.LuhnR_5 = pyFNR.Util.LuhnR(5, 3)
+
+	def test_ranking(self):
+		# check correct ranking for some values
+		self.assertEqual(self.LuhnR_0.rank('0000000000000000'), 0)
+		self.assertEqual(self.LuhnR_0.rank('4485191600670882'), 448519160067088)
+		self.assertEqual(self.LuhnR_0.rank('4485191600670882') + 1, self.LuhnR_0.rank('4485191600670890'))
+		self.assertEqual(self.LuhnR_0.rank('9999999999999995'), self.LuhnR_0.get_words_count() - 1)
+		self.assertEqual(self.LuhnR_5.rank('007'), 0)
+		self.assertEqual(self.LuhnR_5.rank('470'), 47)
+		self.assertEqual(self.LuhnR_5.rank('470') + 1, self.LuhnR_5.rank('489'))
+		self.assertEqual(self.LuhnR_5.rank('998'), self.LuhnR_5.get_words_count() - 1)
+
+	def test_unranking(self):
+		# check correct unranking for some values
+		self.assertEqual(self.LuhnR_0.unrank(0), '0000000000000000')
+		self.assertEqual(self.LuhnR_0.unrank(448519160067088), '4485191600670882')
+		self.assertEqual(self.LuhnR_0.unrank(448519160067089), '4485191600670890')
+		self.assertEqual(self.LuhnR_0.unrank(self.LuhnR_0.get_words_count()-1), '9999999999999995')
+		self.assertEqual(self.LuhnR_5.unrank(0), '007')
+		self.assertEqual(self.LuhnR_5.unrank(47), '470')
+		self.assertEqual(self.LuhnR_5.unrank(48), '489')
+		self.assertEqual(self.LuhnR_5.unrank(self.LuhnR_5.get_words_count()-1), '998')
+
 
 class Helper(object):
 
