@@ -16,7 +16,7 @@ print(str(plain_int) + ' -> ' + str(cipher_int) + ' -> ' + str(plain2_int))
 plain_str = "Hello"
 cipher_str = fnr64.encrypt_str(plain_str)
 plain2_str = fnr64.decrypt_str(cipher_str)
-print(plain_str + ' -> ' + repr(cipher_str) + ' -> ' + plain2_str)
+print(repr(plain_str) + ' -> ' + repr(cipher_str) + ' -> ' + repr(plain2_str))
 
 fnr16.close()
 fnr64.close()

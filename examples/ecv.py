@@ -8,7 +8,6 @@ plain = 'KE007JB'
 cipher = ecv.unrank(fnr.encrypt(ecv.rank(plain)))
 plain2 = ecv.unrank(fnr.decrypt(ecv.rank(cipher)))
 
-print(cipher)
-print(plain2)
+print(plain + ' -> ' + cipher + ' -> ' +plain2)
 
 fnr.close()
